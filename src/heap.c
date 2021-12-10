@@ -151,14 +151,3 @@ void heap_destruir(heap_t* heap){
     free(heap);
 }
 
-
-E1 = [5,2,1], E2 = [3,4,10]
-
-Atender Entrenador
-
-Atender:
-1,2,5
-
-Atender Proximo
-1,2,3,4,5,10
-

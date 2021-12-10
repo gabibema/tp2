@@ -5,6 +5,7 @@
 #include "lista.h"
 #include "split.h"
 #include "heap.h"
+#include "cola.h"
 #include "hash.h"
 #include "abb.h"
 
@@ -23,16 +24,16 @@ const size_t POSICION_PRIMER_POKEMON = 2;
 struct _entrenador_t{
     char* id;
     char* nombre;
+    abb_t* pokemones; //De este entrenador
     size_t cantidad_pokemones;
     size_t cantidad_atendidos;
 };
 
 struct _hospital_pkm_t{
-    hash_t* hash_entrenadores;
+    cola_t* cola_entrenadores;
     size_t cantidad_entrenadores;
 
     abb_t* pokemones; //totales del hospital
-    heap_t* heap_pokemones; //Heap minimal de nivel
     size_t cantidad_pokemon;
 };
 
@@ -44,12 +45,12 @@ struct _pkm_t{
 };
 
 //CADA ID ES UNICO
-
 void destructor_entrenadores(void* e){
     if(!e)
         return;
 
     entrenador_t* entrenador = e;
+    abb_destruir(entrenador->pokemones);
     free(entrenador->nombre);
     free(entrenador->id);
     free(entrenador);
@@ -88,19 +89,17 @@ hospital_t* hospital_crear(){
     if(!hospital)
         return NULL;
 
-    hospital->hash_entrenadores = hash_crear(destructor_entrenadores, TAMANIO_MINIMO);
-    if(!hospital->hash_entrenadores){
+    hospital->cola_entrenadores = cola_crear();
+    if(!hospital->cola_entrenadores){
         free(hospital);
         return NULL;
     }
 
     hospital->pokemones = abb_crear(comparador_nombres);
     if(!hospital->pokemones){
-        hash_destruir(hospital->hash_entrenadores);
+        cola_destruir(hospital->cola_entrenadores);
         free(hospital);
     }
-
-    hospital->heap_pokemones = heap_crear(comparador_nivel, 1);
 
     return hospital;
 }
@@ -176,7 +175,12 @@ entrenador_t* crear_entrenador(char* id, char* nombre){
 
     entrenador->id = id;
     entrenador->nombre = nombre;
+    entrenador->pokemones = abb_crear(comparador_nivel);
 
+    if(!entrenador->pokemones){
+        free(entrenador);
+        return NULL;  
+    } 
     return entrenador;
 }
 
@@ -200,7 +204,7 @@ bool mostrar_pokes(void* poke, void* aux){
  *      Si el puntero al hospital es NULL devuelve false
  *      Si datos_entrenador es NULL devuelve false
  */
-bool hospital_agregar_pokemones(hospital_t* hospital, size_t* cantidad_pokemones, char** datos_pokemon, char* id_entrenador){
+bool hospital_agregar_pokemones(hospital_t* hospital, entrenador_t* entrenador, size_t* cantidad_pokemones, char** datos_pokemon, char* id_entrenador){
     size_t i = 0;
     bool error = false;
 
@@ -212,7 +216,7 @@ bool hospital_agregar_pokemones(hospital_t* hospital, size_t* cantidad_pokemones
             error = true;
         else{
             abb_insertar(hospital->pokemones, pokemon);
-            heap_insertar(hospital->heap_pokemones, pokemon);
+            abb_insertar(entrenador->pokemones, pokemon);
             free(datos_pokemon[i + 1]);
             (*cantidad_pokemones)++;    
         }
@@ -240,7 +244,7 @@ bool hospital_agregar_entrenador(hospital_t* hospital, char** datos){
     entrenador_t* entrenador = crear_entrenador(datos[POSICION_ID], datos[POSICION_NOMBRE]);
     if(!entrenador) return false;
 
-    if(hash_insertar(hospital->hash_entrenadores,datos [POSICION_ID], entrenador) == EXITO)
+    if(cola_encolar(hospital->cola_entrenadores, entrenador) != NULL)
         hospital->cantidad_entrenadores++;
     else
         agregado = false;
@@ -250,11 +254,12 @@ bool hospital_agregar_entrenador(hospital_t* hospital, char** datos){
         return false;
     }
 
-    agregado = hospital_agregar_pokemones(hospital, &hospital->cantidad_pokemon, &datos[POSICION_PRIMER_POKEMON], datos[POSICION_ID]);
-
-    if(!agregado){
-        hash_quitar(hospital->hash_entrenadores, datos[POSICION_ID]);
-    }
+    agregado = hospital_agregar_pokemones(hospital, entrenador, &hospital->cantidad_pokemon, &datos[POSICION_PRIMER_POKEMON], datos[POSICION_ID]);
+    
+    // Asumo que nunca falla
+    // if(!agregado){
+    //    //VEr 
+    // }
 
     //printf("Entrenador: %s\n", entrenador->nombre);
     //abb_con_cada_elemento(entrenador->pokemones, INORDEN, mostrar_pokes, NULL);
@@ -364,7 +369,6 @@ bool aplicar_funcion_pokemon(void* poke_1, void* func){
     return funcion(pokemon);
 }
 
-
 size_t hospital_a_cada_pokemon(hospital_t* hospital, bool (*funcion)(pokemon_t* p)){
     if(hospital  == NULL || funcion == NULL) 
         return NINGUNO;
@@ -380,9 +384,9 @@ void hospital_destruir(hospital_t* hospital){
     if(!hospital)
         return;
 
-    hash_destruir(hospital->hash_entrenadores);
+    
+    cola_destruir_todo(hospital->cola_entrenadores, destructor_entrenadores);
     abb_destruir_todo(hospital->pokemones, destructor_pokemones);
-    heap_destruir(hospital->heap_pokemones);
     free(hospital);
 }
 
