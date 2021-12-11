@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "hospital.h"
+#include "struct.h"
 #include "string_aux.h"
 #include "lista.h"
 #include "split.h"
@@ -20,31 +21,6 @@ const size_t POSICION_ID = 0;
 const size_t POSICION_NOMBRE = 1;
 const size_t POSICION_PRIMER_POKEMON = 2;
 
-
-struct _entrenador_t{
-    char* id;
-    char* nombre;
-    abb_t* pokemones; //De este entrenador
-    size_t cantidad_pokemones;
-    size_t cantidad_atendidos;
-};
-
-struct _hospital_pkm_t{
-    cola_t* cola_entrenadores;
-    size_t cantidad_entrenadores;
-
-    abb_t* pokemones; //totales del hospital
-    size_t cantidad_pokemon;
-};
-
-
-struct _pkm_t{
-    size_t nivel;
-    bool atendido;
-    entrenador_t* entrenador;
-    char* id_entrenador;
-    char* nombre;
-};
 
 //CADA ID ES UNICO
 void destructor_entrenadores(void* e){
@@ -77,29 +53,20 @@ int comparador_nombres(void* poke_1, void* poke_2){
     return strcmp(pokemon_1->nombre, pokemon_2->nombre);
 }
 
-int comparador_nivel(void* poke_1, void* poke_2){
-    if(!poke_1 || !poke_2) return 0;
-
-    pokemon_t* pokemon_1 = poke_1;
-    pokemon_t* pokemon_2 = poke_2;
-
-    return (int)(pokemon_1->nivel - pokemon_2->nivel);
-}
-
 hospital_t* hospital_crear(){
     hospital_t* hospital = calloc(1, sizeof(hospital_t));
     if(!hospital)
         return NULL;
 
-    hospital->cola_entrenadores = cola_crear();
-    if(!hospital->cola_entrenadores){
+    hospital->lista_entrenadores = lista_crear();
+    if(!hospital->lista_entrenadores){
         free(hospital);
         return NULL;
     }
 
     hospital->pokemones = abb_crear(comparador_nombres);
     if(!hospital->pokemones){
-        cola_destruir(hospital->cola_entrenadores);
+        lista_destruir(hospital->lista_entrenadores);
         free(hospital);
     }
 
@@ -178,7 +145,7 @@ entrenador_t* crear_entrenador(char* id, char* nombre){
 
     entrenador->id = id;
     entrenador->nombre = nombre;
-    entrenador->pokemones = abb_crear(comparador_nivel);
+    entrenador->pokemones = abb_crear(comparador_nombres);
 
     if(!entrenador->pokemones){
         free(entrenador);
@@ -247,7 +214,7 @@ bool hospital_agregar_entrenador(hospital_t* hospital, char** datos){
     entrenador_t* entrenador = crear_entrenador(datos[POSICION_ID], datos[POSICION_NOMBRE]);
     if(!entrenador) return false;
 
-    if(cola_encolar(hospital->cola_entrenadores, entrenador) != NULL)
+    if(lista_insertar(hospital->lista_entrenadores, entrenador) != NULL)
         hospital->cantidad_entrenadores++;
     else
         agregado = false;
@@ -303,7 +270,8 @@ bool hospital_leer_archivo(hospital_t* hospital, const char* nombre_archivo){
     char* datos = NULL;
     bool estado = true;
 
-    if(entrenadores == NULL) return false;
+
+    if(hospital == NULL || entrenadores == NULL) return false;
     caracter = (char)fgetc(entrenadores);
     if(caracter == EOF){
         fclose(entrenadores);
@@ -388,7 +356,7 @@ void hospital_destruir(hospital_t* hospital){
         return;
 
     
-    cola_destruir_todo(hospital->cola_entrenadores, destructor_entrenadores);
+    lista_destruir_todo(hospital->lista_entrenadores, destructor_entrenadores);
     abb_destruir_todo(hospital->pokemones, destructor_pokemones);
     free(hospital);
 }

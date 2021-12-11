@@ -105,12 +105,12 @@ void sift_down(heap_t* heap,size_t pos){
     size_t pos_derecha = posicion_hijo_derecho(pos);
 
     if(pos_derecha < heap->tope){
-        if(heap->vector_heap[pos_derecha] < heap->vector_heap[pos_menor]){
+        if(heap->comparador(heap->vector_heap[pos_derecha], heap->vector_heap[pos_menor]) < 0){
             pos_menor = pos_derecha;
         }
     }
 
-    if(heap->vector_heap[pos] > heap->vector_heap[pos_menor]){
+    if(heap->comparador(heap->vector_heap[pos], heap->vector_heap[pos_menor]) > 0){
         swap(heap->vector_heap,pos,pos_menor);
         sift_down(heap,pos_menor);
     }

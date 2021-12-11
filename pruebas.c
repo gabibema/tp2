@@ -1,5 +1,6 @@
 #include "pa2mm.h"
 #include "src/hospital.h"
+#include "src/simulador.h"
 
 #include "string.h"
 #include <stdbool.h>
@@ -131,6 +132,42 @@ void dadosVariosArchivos_puedoAgregarlosTodosAlMismoHospital(){
     hospital_destruir(h);
 }
 
+void puedoCrearYDestruirUnSimulador(){
+    simulador_t* simulador = NULL;
+    hospital_t* hospital = NULL;
+
+    simulador = simulador_crear(hospital);
+    pa2m_afirmar(simulador == NULL, "Al intentar crear un simulador de un hospital NULL, no puedo hacerlo");
+
+    hospital = hospital_crear();
+
+    hospital_leer_archivo(hospital, "ejemplos/archivo_vacio.hospital");
+    simulador = simulador_crear(hospital);
+    pa2m_afirmar(simulador, "Al intentar crear un simulador de un hospital vacío, puedo hacerlo");
+
+    EstadisticasSimulacion* estadisticas = malloc(sizeof(EstadisticasSimulacion));
+
+
+
+    hospital_leer_archivo(hospital, "ejemplos/varios_entrenadores.hospital");
+
+    simulador = simulador_crear(hospital);
+    pa2m_afirmar(simulador, "Al intentar crear un simulador de un hospital con entrenadores, puedo hacerlo");
+
+    unsigned entrenadores_atendidos;
+    unsigned pokemones_atendidos;
+    unsigned pokemones_en_espera;
+    unsigned puntos;
+    unsigned cantidad_eventos_simulados;
+
+
+    pa2m_afirmar(simulador_simular_evento(simulador, ObtenerEstadisticas, estadisticas) == ExitoSimulacion, "Puedo obtener las estadisticas de un simulador recién creado");
+
+
+    simulador_destruir(simulador);
+    hospital_destruir(hospital);
+}
+
 int main(){
 
     pa2m_nuevo_grupo("Pruebas de  creación y destrucción");
@@ -150,6 +187,9 @@ int main(){
 
     pa2m_nuevo_grupo("Pruebas con mas de un archivo");
     dadosVariosArchivos_puedoAgregarlosTodosAlMismoHospital();
+
+    pa2m_nuevo_grupo("Pruebas de Creación y Destrucción del Simulador");
+    puedoCrearYDestruirUnSimulador();
 
     return pa2m_mostrar_reporte();
 }

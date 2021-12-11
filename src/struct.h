@@ -1,19 +1,32 @@
 #ifndef __STRUCT_H__
 #define __STRUCT_H__
 
-#include "hash.h"
+#include "hospital.h"
 #include "lista.h"
+#include "abb.h"
 
-typedef struct hash_elemento{
-    char* clave;
-    void* valor;
-} hash_elemento_t;
+struct _entrenador_t{
+    char* id;
+    char* nombre;
+    abb_t* pokemones; //De este entrenador
+    size_t cantidad_pokemones;
+    size_t cantidad_atendidos;
+};
 
-struct hash{
-    lista_t** tabla_hash;
-    hash_destruir_dato_t destructor;
-    size_t cantidad; //Elementos en la tabla hash
-    size_t capacidad; //Capacidad total de elementos
+struct _hospital_pkm_t{
+    lista_t* lista_entrenadores;
+    size_t cantidad_entrenadores;
+
+    abb_t* pokemones; //totales del hospital
+    size_t cantidad_pokemon;
+};
+
+struct _pkm_t{
+    size_t nivel;
+    bool atendido;
+    entrenador_t* entrenador;
+    char* id_entrenador;
+    char* nombre;
 };
 
 
