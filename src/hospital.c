@@ -37,11 +37,13 @@ struct _hospital_pkm_t{
     size_t cantidad_pokemon;
 };
 
+
 struct _pkm_t{
-    char* id_entrenador;
-    bool atendido;
-    char* nombre;
     size_t nivel;
+    bool atendido;
+    entrenador_t* entrenador;
+    char* id_entrenador;
+    char* nombre;
 };
 
 //CADA ID ES UNICO
@@ -154,15 +156,16 @@ char* linea_leida (FILE* archivo, char caracter){
     return datos;
 }
 
-pokemon_t* crear_pokemon(char* nombre, char* nivel, char* id){
-    if(!nombre || !nivel) return NULL;    
+pokemon_t* crear_pokemon(char* nombre, char* nivel, entrenador_t* entrenador){
+    if(!nombre || !nivel || !entrenador) return NULL;    
 
     pokemon_t* pokemon = malloc(sizeof(pokemon_t));
     if(!pokemon) return NULL;
 
     pokemon->nombre = nombre;
     pokemon->nivel = (size_t)atoi(nivel);
-    pokemon->id_entrenador = id;
+    pokemon->id_entrenador = entrenador->id;
+    pokemon->entrenador = entrenador;
 
     return pokemon;
 }
@@ -211,7 +214,7 @@ bool hospital_agregar_pokemones(hospital_t* hospital, entrenador_t* entrenador, 
     if(datos_pokemon == NULL) return NULL;
 
     while(datos_pokemon[i] != NULL && !error){
-        pokemon_t* pokemon = crear_pokemon(datos_pokemon[i], datos_pokemon[i + 1], id_entrenador);
+        pokemon_t* pokemon = crear_pokemon(datos_pokemon[i], datos_pokemon[i + 1], entrenador);
         if(pokemon == NULL)
             error = true;
         else{

@@ -1,18 +1,13 @@
 #include "hospital.h"
 #include "simulador.h"
 #include "lista.h"
+#include "heap.h"
 #include "abb.h"
 
-struct _hospital_pkm_t{
-    lista_t* lista_entrenadores;
-    size_t cantidad_entrenadores;
-
-    abb_t* pokemones; //totales del hospital
-    size_t cantidad_pokemon;
-};
+#define TAMANIO_MINIMO 1
 
 struct _simulador_t{
-    lista_iterador_t* it_entrenadores; //Iterador externo para la lista de entrenadores
+    heap_t* pokemon_en_espera; //Iterador externo para la lista de entrenadores
     hospital_t* hospital;
 
     unsigned entrenadores_atendidos;
@@ -21,6 +16,16 @@ struct _simulador_t{
     unsigned puntos;
     unsigned cantidad_eventos_simulados;
 };
+
+
+int comparador_nivel(void* poke_1, void* poke_2){
+    if(!poke_1 || !poke_2) return 0;
+
+    pokemon_t* pokemon_1 = poke_1;
+    pokemon_t* pokemon_2 = poke_2;
+
+    return (int)(pokemon_nivel(pokemon_1) - pokemon_nivel(pokemon_2));
+}
 
 
 /**
@@ -37,7 +42,11 @@ simulador_t* simulador_crear(hospital_t* hospital){
 
     simulador->hospital = hospital;
 
-    simulador->it_entrenadores = lista_iterador_crear(simulador->hospital->lista_entrenadores);
+    simulador->pokemon_en_espera = heap_crear(comparador_nivel, TAMANIO_MINIMO); //Creo un heap de tamaño 
+    if(!simulador->pokemon_en_espera){
+        free(simulador);
+        return NULL;
+    }
 
     return simulador;
 }
@@ -60,6 +69,14 @@ ResultadoSimulacion obtener_estadisticas(simulador_t *simulador, void* datos){
 }
 
 
+ResultadoSimulacion atender_proximo_entrenador(simulador_t* simulador){
+    if(!simulador) return ErrorSimulacion;
+
+    entrenador_t* entrenador = cola_desencolar(simulador->hospital->); //
+
+    abb_con_cada_elemento() 
+
+}
 
 /**
  * Simula un evento. Cada evento puede recibir un puntero a un dato que depende
@@ -83,7 +100,7 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
             resultado = obtener_estadisticas(simulador, datos);
             break;
         case AtenderProximoEntrenador:
-
+            resultado = atender_proximo_entrenador(simulador); //?
             break;
         case ObtenerInformacionPokemonEnTratamiento:
             break;
