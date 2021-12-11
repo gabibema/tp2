@@ -3,6 +3,7 @@
 
 #include "hospital.h"
 #include "lista.h"
+#include "heap.h"
 #include "abb.h"
 
 struct _entrenador_t{
@@ -11,6 +12,17 @@ struct _entrenador_t{
     abb_t* pokemones; //De este entrenador
     size_t cantidad_pokemones;
     size_t cantidad_atendidos;
+};
+
+struct _simulador_t{
+    heap_t* heap_pokemones; //Heap minimal de los pokemones a atender
+    lista_iterador_t* iterador_entrenadores; //Iterador externo en el cual el elemento actual es el entrenador que se deberá atender
+    hospital_t* hospital;
+
+    unsigned entrenadores_atendidos;
+    unsigned cantidad_eventos_simulados;
+    unsigned pokemones_atendidos;
+    unsigned puntos;
 };
 
 struct _hospital_pkm_t{

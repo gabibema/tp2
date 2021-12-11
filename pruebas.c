@@ -1,6 +1,7 @@
 #include "pa2mm.h"
 #include "src/hospital.h"
 #include "src/simulador.h"
+#include "src/struct.h"
 
 #include "string.h"
 #include <stdbool.h>
@@ -133,6 +134,7 @@ void dadosVariosArchivos_puedoAgregarlosTodosAlMismoHospital(){
 }
 
 void puedoCrearYDestruirUnSimulador(){
+    EstadisticasSimulacion* estadisticas = calloc(1,sizeof(EstadisticasSimulacion));
     simulador_t* simulador = NULL;
     hospital_t* hospital = NULL;
 
@@ -144,29 +146,82 @@ void puedoCrearYDestruirUnSimulador(){
     hospital_leer_archivo(hospital, "ejemplos/archivo_vacio.hospital");
     simulador = simulador_crear(hospital);
     pa2m_afirmar(simulador, "Al intentar crear un simulador de un hospital vacío, puedo hacerlo");
-
-    EstadisticasSimulacion* estadisticas = malloc(sizeof(EstadisticasSimulacion));
-
-
-
-    hospital_leer_archivo(hospital, "ejemplos/varios_entrenadores.hospital");
-
-    simulador = simulador_crear(hospital);
-    pa2m_afirmar(simulador, "Al intentar crear un simulador de un hospital con entrenadores, puedo hacerlo");
-
-    unsigned entrenadores_atendidos;
-    unsigned pokemones_atendidos;
-    unsigned pokemones_en_espera;
-    unsigned puntos;
-    unsigned cantidad_eventos_simulados;
-
-
-    pa2m_afirmar(simulador_simular_evento(simulador, ObtenerEstadisticas, estadisticas) == ExitoSimulacion, "Puedo obtener las estadisticas de un simulador recién creado");
+    pa2m_afirmar(simulador_simular_evento(simulador, ObtenerEstadisticas, estadisticas) == ExitoSimulacion, "Puedo obtener las estadisticas del simulador recién creado\n");
 
 
     simulador_destruir(simulador);
     hospital_destruir(hospital);
+
+    hospital = hospital_crear();
+    hospital_leer_archivo(hospital, "ejemplos/varios_entrenadores.hospital");
+
+
+    simulador = simulador_crear(hospital);
+    pa2m_afirmar(simulador, "Al intentar crear un simulador de un hospital con entrenadores, puedo hacerlo");
+
+
+    pa2m_afirmar(simulador_simular_evento(simulador, ObtenerEstadisticas, estadisticas) == ExitoSimulacion, "Puedo obtener las estadisticas de un simulador recién creado");
+
+    pa2m_afirmar(estadisticas->pokemon_en_espera == 0, "El simulador tiene 0 (cero) pokemones en espera");
+    pa2m_afirmar(estadisticas->entrenadores_atendidos == 0 && estadisticas->pokemon_atendidos == 0, "El simulador tiene 0 (cero) pokemones y 0 (cero) entrenadores atendidos");
+    pa2m_afirmar(estadisticas->pokemon_totales == 24 && estadisticas->entrenadores_totales == 5, "El simulador la cantidad correcta de entrenadores y pokemones totales");
+
+    
+
+    simulador_destruir(simulador);
+    hospital_destruir(hospital);
+    free(estadisticas);
 }
+
+bool es_mismo_pokemon(pokemon_t poke1, pokemon_t poke2){
+    return (poke1.nivel == poke2.nivel && strcmp(poke1.id_entrenador,poke2.id_entrenador) == 0 && strcmp(poke1.nombre, poke2.nombre) == 0);
+}
+
+void dadoUnSimuladorValido_puedoAniadirEntrenadores_SoloSiTengoDisponibles(){
+    hospital_t* hospital = hospital_crear();
+    simulador_t* simulador = simulador_crear(hospital);
+
+    pa2m_afirmar(simulador_simular_evento(simulador, AtenderProximoEntrenador, NULL) == ErrorSimulacion, "Dado un simulador con un hospital vacío, al no tener entrenadores, si intento atender un nuevo entrenadores no puedo hacerlo\n");
+
+    hospital_destruir(hospital); simulador_destruir(simulador);
+
+    hospital = hospital_crear();
+    simulador = simulador_crear(hospital);
+    hospital_leer_archivo(hospital, "ejemplos/varios_entrenadores.hospital");
+
+    pa2m_afirmar(simulador_simular_evento(simulador, AtenderProximoEntrenador, NULL) == ExitoSimulacion, "Dado el simulador que aún tiene entrenadores para atender, al atender un nuevo entrenador puedo hacerlo.")
+    pa2m_afirmar(heap_tamanio(simulador->heap_pokemones) == 4, "Al atender un llamar un nuevo entrenador hay 4 pokemones para ser atendidos\n");
+    
+    pa2m_afirmar(simulador_simular_evento(simulador, AtenderProximoEntrenador, NULL) == ExitoSimulacion, "Dado el simulador que aún tiene entrenadores para atender, al atender un nuevo entrenador puedo hacerlo.")
+    pa2m_afirmar(heap_tamanio(simulador->heap_pokemones) == 8, "Al atender un llamar un nuevo entrenador hay 8 pokemones para ser atendidos\n");
+
+// 1;lucas;charizard;20;rampardos;10;torkal;43;duskull;85
+// 2;valen;miltank;45;toxicroak;20;alcremie;65;shuckle;59
+
+
+    pokemon_t pokemones[8] = {{10, false, NULL, "1", "rampardos"},{20, false, NULL, "2", "toxicroak"},
+                              {20, false, NULL, "1", "charizard"},{43, false, NULL, "1", "torkal"},
+                              {45, false, NULL, "2", "miltank"}, {59, false, NULL, "2", "shuckle"}, 
+                              {65, false, NULL, "2", "alcremie"}, {85,false, NULL, "1", "duskull"}};
+
+    for(int i = 0; i < 8; i++){
+        pokemon_t* pokemon = heap_extraer_raiz(simulador->heap_pokemones);
+        
+        if(es_mismo_pokemon(*pokemon, pokemones[i])){
+            printf("%s%s%s El proximo Pokemon es: %s con nivel %li y debería ser: %s con nivel %li.\n", VERDE, TILDE, BLANCO, pokemon->nombre, pokemon->nivel, pokemones[i].nombre, pokemones[i].nivel);
+            __pa2m_cantidad_de_pruebas_corridas++;
+            
+        } else{
+            printf("%s%s%s El proximo Pokemon es: %s con nivel %li y debería ser: %s con nivel %li.\n", ROJO, CRUZ, BLANCO, pokemon->nombre, pokemon->nivel, pokemones[i].nombre, pokemones[i].nivel);
+            __pa2m_cantidad_de_pruebas_fallidas = 0;
+        }
+    }
+
+    hospital_destruir(hospital); simulador_destruir(simulador);
+
+}
+
+
 
 int main(){
 
@@ -190,6 +245,9 @@ int main(){
 
     pa2m_nuevo_grupo("Pruebas de Creación y Destrucción del Simulador");
     puedoCrearYDestruirUnSimulador();
+
+    pa2m_nuevo_grupo("Pruebas de Simulador Atender Proximo Entrenador");
+    dadoUnSimuladorValido_puedoAniadirEntrenadores_SoloSiTengoDisponibles();
 
     return pa2m_mostrar_reporte();
 }

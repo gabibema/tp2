@@ -8,19 +8,6 @@
 #define TAMANIO_MINIMO 1
 #define ERROR -1
 
-struct _simulador_t{
-    heap_t* pokemon_en_espera;
-    lista_iterador_t* entrenadores_en_espera; //Iterador externo en el cual el elemento actual es el entrenador que se deberá atender
-    hospital_t* hospital;
-
-    unsigned entrenadores_atendidos;
-    unsigned pokemones_atendidos;
-    unsigned pokemones_en_espera;
-    unsigned puntos;
-    unsigned cantidad_eventos_simulados;
-};
-
-
 int comparador_nivel(void* poke_1, void* poke_2){
     if(!poke_1 || !poke_2) return 0;
 
@@ -43,16 +30,16 @@ simulador_t* simulador_crear(hospital_t* hospital){
     if(!simulador) return NULL;
 
     simulador->hospital = hospital;
-
-    simulador->pokemon_en_espera = heap_crear(comparador_nivel, TAMANIO_MINIMO); //Creo un heap de tamaño 
-    if(!simulador->pokemon_en_espera){
+    
+    simulador->heap_pokemones = heap_crear(comparador_nivel, TAMANIO_MINIMO); //Creo un heap de tamaño 
+    if(!simulador->heap_pokemones){
         free(simulador);
         return NULL;
     }
 
-    simulador->entrenadores_en_espera = lista_iterador_crear(hospital->lista_entrenadores);
-    if(!simulador->entrenadores_en_espera){
-        heap_destruir(simulador->pokemon_en_espera);
+    simulador->iterador_entrenadores = lista_iterador_crear(hospital->lista_entrenadores);
+    if(!simulador->iterador_entrenadores){
+        heap_destruir(simulador->heap_pokemones);
         free(simulador);
         return NULL;
     }
@@ -90,15 +77,16 @@ bool guardar_en_heap(void* poke, void* h){
 }
 
 ResultadoSimulacion atender_proximo_entrenador(simulador_t* simulador){
-    if(!simulador) return ErrorSimulacion;
+    if(!simulador || hospital_cantidad_pokemon(simulador->hospital) == 0) return ErrorSimulacion;
 
-    entrenador_t* entrenador = lista_iterador_elemento_actual(simulador->entrenadores_en_espera);
-    if(!entrenador){
+    entrenador_t* entrenador = lista_iterador_elemento_actual(simulador->iterador_entrenadores);
+    if(!entrenador || !entrenador->pokemones){
         //ERROR:
         return ErrorSimulacion;
     }
 
-    abb_con_cada_elemento(entrenador->pokemones, INORDEN, guardar_en_heap, simulador->pokemon_en_espera);
+    abb_con_cada_elemento(entrenador->pokemones, INORDEN, guardar_en_heap, simulador->heap_pokemones);
+    lista_iterador_avanzar(simulador->iterador_entrenadores);
     return ExitoSimulacion;
 }
 
@@ -164,7 +152,7 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
 void simulador_destruir(simulador_t* simulador){
     if(!simulador || !simulador->hospital) return;
 
-    lista_iterador_destruir(simulador->entrenadores_en_espera);
-    heap_destruir(simulador->pokemon_en_espera);
+    lista_iterador_destruir(simulador->iterador_entrenadores);
+    heap_destruir(simulador->heap_pokemones);
     free(simulador);
 }

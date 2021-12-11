@@ -44,6 +44,12 @@ size_t posicion_padre(size_t posicion){
     return (size_t)(((int)posicion - 1)/2);
 }
 
+size_t heap_tamanio(heap_t* heap){
+    if(!heap) return 0;
+
+    return heap->tope;
+}
+
 bool heap_vacio(heap_t* heap){
     return ((heap == NULL ) || (heap->vector_heap == NULL));
 }
