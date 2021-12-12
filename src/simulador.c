@@ -137,7 +137,7 @@ simulador_t* simulador_crear(hospital_t* hospital){
            free(simulador);
     }
 
-    simulador->nombre_dificultad_actual = NORMAL; // Casinho do macaquinho
+    simulador->dificultad_actual = (DatosDificultad*)&DIFICULTAD_NORMAL; // Casinho do macaquinho
     simulador->estadisticas.entrenadores_totales = (unsigned)hospital_cantidad_entrenadores(hospital);
     simulador->estadisticas.pokemon_totales = (unsigned)hospital_cantidad_pokemon(hospital);
     return simulador;
@@ -193,8 +193,8 @@ ResultadoSimulacion atender_proximo_entrenador(simulador_t* simulador){
     abb_con_cada_elemento(entrenador->pokemones, INORDEN, guardar_en_heap, simulador->heap_pokemones);
     lista_iterador_avanzar(simulador->iterador_entrenadores);
 
-    // if(simulador->paciente.pokemon == NULL)
-    //     atender_pokemon(&(simulador->paciente), simulador->heap_pokemones);
+    if(simulador->paciente.pokemon == NULL)
+        atender_pokemon(&(simulador->paciente), simulador->heap_pokemones);
 
     simulador->estadisticas.pokemon_en_espera = (unsigned)heap_tamanio(simulador->heap_pokemones);
     simulador->estadisticas.entrenadores_atendidos++;
@@ -207,7 +207,7 @@ ResultadoSimulacion obtener_informacion_dificultad(simulador_t* simulador, Infor
     DatosDificultad* dificultad = lista_elemento_en_posicion(simulador->lista_dificultades, (size_t)datos->id);   
 
     datos->nombre_dificultad = dificultad->nombre;
-    if(strcmp(dificultad->nombre, simulador->nombre_dificultad_actual) == 0){
+    if(strcmp(dificultad->nombre, simulador->dificultad_actual->nombre) == 0){
         datos->en_uso = true;
     }
     return ExitoSimulacion;
@@ -263,18 +263,7 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
 
     simulador->estadisticas.cantidad_eventos_simulados++;
     return resultado;
-    // ObtenerEstadisticas,
 
-    // AtenderProximoEntrenador,
-
-    // ObtenerInformacionPokemonEnTratamiento,
-    // AdivinarNivelPokemon,
-
-    // AgregarDificultad,
-    // SeleccionarDificultad,
-    // ObtenerInformacionDificultad,
-
-    // FinalizarSimulacion
 }
 
 
@@ -288,5 +277,6 @@ void simulador_destruir(simulador_t* simulador){
     lista_iterador_destruir(simulador->iterador_entrenadores);
     heap_destruir(simulador->heap_pokemones);
     lista_destruir(simulador->lista_dificultades);
+    hospital_destruir(simulador->hospital);
     free(simulador);
 }

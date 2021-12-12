@@ -26,7 +26,8 @@ struct _simulador_t{
     lista_iterador_t* iterador_entrenadores; //Iterador externo en el cual el elemento actual es el entrenador que se deberá atender
     heap_t* heap_pokemones; //Heap minimal de los pokemones a atender
 
-    char* nombre_dificultad_actual;
+    DatosDificultad* dificultad_actual;
+    //char* nombre_dificultad_actual;
     EstadisticasSimulacion estadisticas;
     paciente_t paciente;
     

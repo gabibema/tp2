@@ -1,6 +1,8 @@
 #ifndef HEAP_H_
 #define HEAP_H_
 
+#include <stdio.h>
+
 typedef struct _heap_t heap_t;
 
 heap_t* heap_crear(int (*comparador)(void*, void*), size_t tamanio_inicial);

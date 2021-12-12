@@ -150,7 +150,6 @@ void puedoCrearYDestruirUnSimulador(){
 
 
     simulador_destruir(simulador);
-    hospital_destruir(hospital);
 
     hospital = hospital_crear();
     hospital_leer_archivo(hospital, "ejemplos/varios_entrenadores.hospital");
@@ -169,7 +168,6 @@ void puedoCrearYDestruirUnSimulador(){
     
 
     simulador_destruir(simulador);
-    hospital_destruir(hospital);
     free(estadisticas);
 }
 
@@ -180,33 +178,32 @@ bool es_mismo_pokemon(pokemon_t poke1, pokemon_t poke2){
 void dadoUnSimuladorValido_puedoAniadirEntrenadores_SoloSiTengoDisponibles(){
     hospital_t* hospital = hospital_crear();
     simulador_t* simulador = simulador_crear(hospital);
+    pokemon_t pokemones[8] = {{10, false, NULL, "1", "rampardos"}, {20, false, NULL, "1", "charizard"},
+                              {20, false, NULL, "2", "toxicroak"},{43, false, NULL, "1", "torkal"},
+                              {45, false, NULL, "2", "miltank"}, {59, false, NULL, "2", "shuckle"}, 
+                              {65, false, NULL, "2", "alcremie"}, {85,false, NULL, "1", "duskull"}};
 
     pa2m_afirmar(simulador_simular_evento(simulador, AtenderProximoEntrenador, NULL) == ErrorSimulacion, "Dado un simulador con un hospital vacío, al no tener entrenadores, si intento atender un nuevo entrenadores no puedo hacerlo\n");
 
-    hospital_destruir(hospital); simulador_destruir(simulador);
+    simulador_destruir(simulador);
 
     hospital = hospital_crear();
     hospital_leer_archivo(hospital, "ejemplos/varios_entrenadores.hospital");
     simulador = simulador_crear(hospital);
 
     pa2m_afirmar(simulador_simular_evento(simulador, AtenderProximoEntrenador, NULL) == ExitoSimulacion, "Dado el simulador que aún tiene entrenadores para atender, al atender un nuevo entrenador puedo hacerlo.");
-    pa2m_afirmar(simulador->estadisticas.entrenadores_atendidos == 1, "Al atender un nuevo entrenador, se atendió un entrenador");
-    pa2m_afirmar(heap_tamanio(simulador->heap_pokemones) == 4, "Hay 4 pokemones para ser atendidos\n");
-    
+    pa2m_afirmar(simulador->estadisticas.entrenadores_atendidos == 1, "Al atender un nuevo entrenador, la cantidad de entrenadores atendidos es 1 (uno)");
+    pa2m_afirmar(es_mismo_pokemon(*simulador->paciente.pokemon, pokemones[0]), "El pokemon que está siendo atendido actualmente es el de menor nivel");
+    pa2m_afirmar(heap_tamanio(simulador->heap_pokemones) == 3, "Hay 3 (tres) pokemones esperando para ser atendidos\n");
+
     pa2m_afirmar(simulador_simular_evento(simulador, AtenderProximoEntrenador, NULL) == ExitoSimulacion, "Dado el simulador que aún tiene entrenadores para atender, al atender un nuevo entrenador puedo hacerlo.")
-        pa2m_afirmar(simulador->estadisticas.entrenadores_atendidos == 2, "Al atender un nuevo entrenador, se atendió dos entrenadores ");
-    pa2m_afirmar(heap_tamanio(simulador->heap_pokemones) == 8, "Hay 8 pokemones para ser atendidos\n");
+    pa2m_afirmar(simulador->estadisticas.entrenadores_atendidos == 2, "Al atender un nuevo entrenador, la cantidad de entrenadores atendidos es 2 (dos) ");
+    pa2m_afirmar(es_mismo_pokemon(*simulador->paciente.pokemon, pokemones[0]), "El pokemon que está siendo atendido actualmente no se modificó");
+    pa2m_afirmar(heap_tamanio(simulador->heap_pokemones) == 7, "Hay 7 (siete) pokemones esperando para ser atendidos\n");
 
 // 1;lucas;charizard;20;rampardos;10;torkal;43;duskull;85
 // 2;valen;miltank;45;toxicroak;20;alcremie;65;shuckle;59
-
-
-    pokemon_t pokemones[8] = {{10, false, NULL, "1", "rampardos"},{20, false, NULL, "2", "toxicroak"},
-                              {20, false, NULL, "1", "charizard"},{43, false, NULL, "1", "torkal"},
-                              {45, false, NULL, "2", "miltank"}, {59, false, NULL, "2", "shuckle"}, 
-                              {65, false, NULL, "2", "alcremie"}, {85,false, NULL, "1", "duskull"}};
-
-    for(int i = 0; i < 8; i++){
+    for(int i = 1; i < 8; i++){
         pokemon_t* pokemon = heap_extraer_raiz(simulador->heap_pokemones);
         
         if(es_mismo_pokemon(*pokemon, pokemones[i])){
@@ -219,35 +216,37 @@ void dadoUnSimuladorValido_puedoAniadirEntrenadores_SoloSiTengoDisponibles(){
         }
     }
 
-    hospital_destruir(hospital); simulador_destruir(simulador);
+    simulador_destruir(simulador);
 }
 
 
 int main(){
 
-    // pa2m_nuevo_grupo("Pruebas de  creación y destrucción");
-    // puedoCrearYDestruirUnHospital();
+    pa2m_nuevo_grupo("Pruebas de  creación y destrucción");
+    puedoCrearYDestruirUnHospital();
 
-    // pa2m_nuevo_grupo("Pruebas con NULL");
-    // dadoUnHospitalNULL_lasPuedoAplicarLasOperacionesDelHospitalSinProblema();
+    pa2m_nuevo_grupo("Pruebas con NULL");
+    dadoUnHospitalNULL_lasPuedoAplicarLasOperacionesDelHospitalSinProblema();
 
-    // pa2m_nuevo_grupo("Pruebas con un archivo vacío");
-    // dadoUnArchivoVacio_NoSeAgreganPokemonAlHospital();
+    pa2m_nuevo_grupo("Pruebas con un archivo vacío");
+    dadoUnArchivoVacio_NoSeAgreganPokemonAlHospital();
 
-    // pa2m_nuevo_grupo("Pruebas con un archivo de un entrenador");
-    // dadoUnArchivoConUnEntrenador_SeAgregaElEntrenadorYSusPokemonAlHospital();
+    pa2m_nuevo_grupo("Pruebas con un archivo de un entrenador");
+    dadoUnArchivoConUnEntrenador_SeAgregaElEntrenadorYSusPokemonAlHospital();
 
-    // pa2m_nuevo_grupo("Pruebas con un archivo de varios entrenadores");
-    // dadoUnArchivoConVariosEntrenadores_SeAgreganLosEntrenadoresYSusPokemonAlHospital();
+    pa2m_nuevo_grupo("Pruebas con un archivo de varios entrenadores");
+    dadoUnArchivoConVariosEntrenadores_SeAgreganLosEntrenadoresYSusPokemonAlHospital();
 
-    // pa2m_nuevo_grupo("Pruebas con mas de un archivo");
-    // dadosVariosArchivos_puedoAgregarlosTodosAlMismoHospital();
+    pa2m_nuevo_grupo("Pruebas con mas de un archivo");
+    dadosVariosArchivos_puedoAgregarlosTodosAlMismoHospital();
 
-    // pa2m_nuevo_grupo("Pruebas de Creación y Destrucción del Simulador");
-    // puedoCrearYDestruirUnSimulador();
+    pa2m_nuevo_grupo("Pruebas de Creación y Destrucción del Simulador");
+    puedoCrearYDestruirUnSimulador();
 
     pa2m_nuevo_grupo("Pruebas de Simulador Atender Proximo Entrenador");
     dadoUnSimuladorValido_puedoAniadirEntrenadores_SoloSiTengoDisponibles();
+
+    pa2m_nuevo_grupo("Pruebas de Dificultad Fácil");
 
     return pa2m_mostrar_reporte();
 }
