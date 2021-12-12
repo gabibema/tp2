@@ -6,6 +6,9 @@
 #include "string.h"
 #include <stdbool.h>
 
+
+
+
 bool ignorar_pokemon(pokemon_t* p){
     p = p;
     return true;
@@ -134,6 +137,8 @@ void dadosVariosArchivos_puedoAgregarlosTodosAlMismoHospital(){
 }
 
 void puedoCrearYDestruirUnSimulador(){
+
+    //AGREGAR PRUEBaS DE DIFICULTADES
     EstadisticasSimulacion* estadisticas = calloc(1,sizeof(EstadisticasSimulacion));
     simulador_t* simulador = NULL;
     hospital_t* hospital = NULL;
@@ -220,6 +225,102 @@ void dadoUnSimuladorValido_puedoAniadirEntrenadores_SoloSiTengoDisponibles(){
 }
 
 
+unsigned calcular_puntaje_tutorial(unsigned intentos){
+    return 500/intentos;
+}
+
+int verificar_nivel_pokemon(unsigned nivel_adivinado, unsigned nivel_pokemon){
+    return (int)nivel_pokemon - (int)nivel_adivinado;
+}
+
+#define ACERTADO "Acertaste!"
+#define SEGUI_PARTICIPANDO "Seguí participando!"
+
+const char* verificacion_tutorial(int resultado){
+    char* mensaje = NULL;
+
+    if(resultado == 0){
+        mensaje = ACERTADO;
+    } else if (resultado < 0){
+        mensaje = SEGUI_PARTICIPANDO;
+        printf("Te pasaste por: %i niveles :(", resultado);
+    } else {
+        mensaje = SEGUI_PARTICIPANDO;
+        printf("Te faltan: %i niveles :(", resultado);
+    }
+
+    return mensaje;
+}
+
+#define TUTORIAL "Tutorial"
+
+
+
+void dadoUnSimuladorValido_puedoAgregarDificultades_siEstasSonValidas(){
+    hospital_t* hospital = hospital_crear();
+    hospital_leer_archivo(hospital, "ejemplos/varios_entrenadores.hospital");
+    simulador_t* simulador = simulador_crear(hospital);
+
+    DatosDificultad tutorial = {TUTORIAL, calcular_puntaje_tutorial, NULL, verificacion_tutorial};
+
+    pa2m_afirmar(simulador_simular_evento(NULL, AgregarDificultad, &tutorial) == ErrorSimulacion, "Dado un simulador NULL, al intentar agregar una nueva dificultad no puedo hacerlo");
+    pa2m_afirmar(simulador_simular_evento(simulador, AgregarDificultad, NULL) == ErrorSimulacion, "Dado un simulador válido, al intentar agregar una dificultad NULL, no puedo hacerlo");
+    pa2m_afirmar(simulador_simular_evento(simulador, AgregarDificultad, NULL) == ErrorSimulacion, "Dado un simulador válido, al intentar agregar una dificultad con un campo NULL, no puedo hacerlo\n");
+
+    tutorial.verificar_nivel = verificar_nivel_pokemon;
+
+    pa2m_afirmar(simulador_simular_evento(simulador, AgregarDificultad, &tutorial) == ExitoSimulacion, "Dado un simulador válido, al intentar agregar una nueva dificultad puedo hacerlo");
+    pa2m_afirmar(lista_tamanio(simulador->lista_dificultades) == 4, "Al agregar la dificultad cantidad de dificultades en el simulador ahora es 4 (cuatro)");
+    pa2m_afirmar(strcmp(simulador->dificultad_actual->nombre, "Normal") == 0, "La dificultad actual no se modifica y sigue siendo Normal\n");
+
+    pa2m_afirmar(simulador_simular_evento(simulador, AgregarDificultad, &tutorial) == ErrorSimulacion, "Dado un simulador válido, al intentar agregar una dificultad que ya existía, no puedo hacerlo");
+    pa2m_afirmar(lista_tamanio(simulador->lista_dificultades) == 4, "La cantidad de dificultades en el simulador no se modifica");
+    pa2m_afirmar(strcmp(simulador->dificultad_actual->nombre, "Normal") == 0, "La dificultad actual no se modifica y sigue siendo Normal\n");
+
+    DatosDificultad dificultades[5] = {{"hola", calcular_puntaje_tutorial, verificar_nivel_pokemon, verificacion_tutorial},
+                                       {"holaaa", calcular_puntaje_tutorial, verificar_nivel_pokemon, verificacion_tutorial},
+                                       {"holaaaaa", calcular_puntaje_tutorial, verificar_nivel_pokemon, verificacion_tutorial},
+                                       {"holaaaaaaaaa", calcular_puntaje_tutorial,verificar_nivel_pokemon, verificacion_tutorial},
+                                       {"oa", calcular_puntaje_tutorial,verificar_nivel_pokemon, verificacion_tutorial}};
+
+    for(int i = 0; i < 4; i++){
+        simulador_simular_evento(simulador, AgregarDificultad, &dificultades[i]);
+    }
+
+    
+    pa2m_afirmar(simulador_simular_evento(simulador, AgregarDificultad, &dificultades[4]) == ExitoSimulacion, "Puedo seguir agregando dificultades");
+    pa2m_afirmar(lista_tamanio(simulador->lista_dificultades) == 9, "La cantidad de dificultades en el simulador es 9 (nueve)");
+    pa2m_afirmar(strcmp(simulador->dificultad_actual->nombre, "Normal") == 0, "La dificultad actual no se modifica y sigue siendo Normal\n");
+
+    simulador_destruir(simulador);
+}
+
+void dadoUnSimuladorValido_puedoObtenerInformacionDeDificultades_siLosIdsExisten(){
+    hospital_t* hospital = hospital_crear();
+    hospital_leer_archivo(hospital, "ejemplos/varios_entrenadores.hospital");
+    simulador_t* simulador = simulador_crear(hospital);
+
+    InformacionDificultad informacion = {NULL, false, 0};
+    pa2m_afirmar(simulador_simular_evento(NULL, ObtenerInformacionDificultad, &informacion) == ErrorSimulacion, "Dado un simulador NULL, al intentar obtener información de una dificultad no puedo hacerlo");
+    pa2m_afirmar(simulador_simular_evento(simulador, ObtenerInformacionDificultad, NULL) == ErrorSimulacion, "Dado un simulador válido, al intentar obtener información de una dificultad no puedo hacerlo");
+    informacion.id = 6;
+    pa2m_afirmar(simulador_simular_evento(simulador, ObtenerInformacionDificultad, &informacion) == ErrorSimulacion, "Dado un simulador válido, al intentar obtener información de una dificultad con un id no existente, no puedo hacerlo\n");
+
+
+    informacion.id = 0;
+    pa2m_afirmar(simulador_simular_evento(simulador, ObtenerInformacionDificultad, &informacion) == ExitoSimulacion, "Dado un simulador válido, al intentar obtener información de una dificultad con un id existente, puedo hacerlo");
+    pa2m_afirmar(strcmp(informacion.nombre_dificultad, "Fácil") == 0, "El nombre de la dificultad obtenida es el correcto");
+    pa2m_afirmar(!informacion.en_uso, "La dificultad obtenida no está en uso\n");
+
+
+    informacion.id = 1;
+    pa2m_afirmar(simulador_simular_evento(simulador, ObtenerInformacionDificultad, &informacion) == ExitoSimulacion, "Dado un simulador válido, al intentar obtener información de una dificultad con un id existente, puedo hacerlo");
+    pa2m_afirmar(strcmp(informacion.nombre_dificultad, "Normal") == 0, "El nombre de la dificultad obtenida es el correcto");
+    pa2m_afirmar(informacion.en_uso, "La dificultad obtenida está en uso");
+
+    simulador_destruir(simulador);
+}
+
 int main(){
 
     pa2m_nuevo_grupo("Pruebas de  creación y destrucción");
@@ -246,7 +347,11 @@ int main(){
     pa2m_nuevo_grupo("Pruebas de Simulador Atender Proximo Entrenador");
     dadoUnSimuladorValido_puedoAniadirEntrenadores_SoloSiTengoDisponibles();
 
-    pa2m_nuevo_grupo("Pruebas de Dificultad Fácil");
+    pa2m_nuevo_grupo("Pruebas de Dificultad Agregar");
+    dadoUnSimuladorValido_puedoAgregarDificultades_siEstasSonValidas();
+
+    pa2m_nuevo_grupo("Pruebas de Dificultad Informacion");
+    dadoUnSimuladorValido_puedoObtenerInformacionDeDificultades_siLosIdsExisten();
 
     return pa2m_mostrar_reporte();
 }

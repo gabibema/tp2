@@ -26,6 +26,7 @@ unsigned calcular_puntaje(unsigned intentos){
 int verificar_nivel(unsigned nivel_adivinado, unsigned nivel_pokemon){
     return (int)nivel_pokemon - (int)nivel_adivinado;
 }
+
 #define MENSAJE_ACERTADO "Acertaste"
 
 #define MENSAJE_FACIL_1 "Muy cerca"
@@ -55,8 +56,6 @@ const char* verificacion_facil(int resultado){
 #define MENSAJE_NORMAL_1 "Caliente"
 #define MENSAJE_NORMAL_2 "Frío"
 
-
-
 const char* verificacion_normal(int resultado){
     char* mensaje = NULL;
 
@@ -85,7 +84,7 @@ const char* verificacion_dificil(int resultado){
     return mensaje;
 }
 
-#define FACIL "Facil"
+#define FACIL "Fácil"
 #define NORMAL "Normal"
 #define DIFICIL "Dificil"
 
@@ -201,8 +200,20 @@ ResultadoSimulacion atender_proximo_entrenador(simulador_t* simulador){
     return ExitoSimulacion;
 }
 
+bool es_id_valido(lista_t* lista_dificultades, int id){
+    if(!lista_dificultades) return false;
+
+    return (lista_tamanio(lista_dificultades) > id);
+}
+
 ResultadoSimulacion obtener_informacion_dificultad(simulador_t* simulador, InformacionDificultad* datos){
-    if(!simulador || !datos) return ErrorSimulacion;
+    if(!simulador || !datos ) return ErrorSimulacion;
+
+    if(!es_id_valido(simulador->lista_dificultades, datos->id)){
+        datos->nombre_dificultad = NULL;
+        datos->en_uso = false;
+        return ErrorSimulacion;
+    }
 
     DatosDificultad* dificultad = lista_elemento_en_posicion(simulador->lista_dificultades, (size_t)datos->id);   
 
@@ -217,6 +228,83 @@ ResultadoSimulacion finalizar_simulacion(bool* finalizado){
     if(!finalizado || (*finalizado)) return ErrorSimulacion;
 
     (*finalizado) = true;
+    return ExitoSimulacion;
+}
+
+bool dificultad_vacia(DatosDificultad* datos){
+    return ((!datos) || (!datos->nombre) || (!datos->calcular_puntaje) || (!datos->verificacion_a_string) || (!datos->verificar_nivel));
+}
+
+bool dificultad_repetida(lista_t* lista_dificultades, DatosDificultad* datos){
+    if(!lista_dificultades || !datos) return false;
+    lista_iterador_t* iterador = lista_iterador_crear(lista_dificultades);
+    DatosDificultad* dificultad = NULL;
+    bool repetida = false;
+    bool error = false;
+
+    if(!iterador) return false;
+    while(lista_iterador_tiene_siguiente(iterador) && !error && !repetida){
+        dificultad = lista_iterador_elemento_actual(iterador);
+        if(dificultad != NULL)
+            repetida = strcmp(dificultad->nombre, datos->nombre) == 0 ? true : false;
+        else
+            error = true;
+        lista_iterador_avanzar(iterador);
+    }
+
+    lista_iterador_destruir(iterador);
+    return repetida;
+}
+
+bool es_difultad_valida(lista_t* lista_dificultades, DatosDificultad* datos){
+    return ((lista_dificultades) && (!dificultad_vacia(datos)) && (!dificultad_repetida(lista_dificultades, datos)));
+}
+
+ResultadoSimulacion agregar_dificultad(simulador_t* simulador, DatosDificultad* datos){
+    if(!simulador || !datos || !es_difultad_valida(simulador->lista_dificultades,datos)) return ErrorSimulacion;
+
+    return lista_insertar(simulador->lista_dificultades, datos) != NULL ? ExitoSimulacion : ErrorSimulacion;
+}
+
+ResultadoSimulacion seleccionar_dificultad(simulador_t* simulador, int* id){
+    if(!simulador || !id || !es_dificultad_valida(simulador->lista_dificultades, *id)) return ErrorSimulacion;
+
+    DatosDificultad* dificultad = lista_elemento_en_posicion(simulador->lista_dificultades, *id);
+    if(!dificultad) return ErrorSimulacion;
+
+    simulador->dificultad_actual = dificultad;
+    return ExitoSimulacion;
+}
+
+ResultadoSimulacion obtener_informacion_paciente(simulador_t* simulador, InformacionPokemon* datos){
+    if(!simulador || !datos) return ErrorSimulacion;
+
+    paciente_t paciente = simulador->paciente;
+
+    if(paciente.pokemon == NULL){
+        datos->nombre_entrenador = NULL;
+        datos->nombre_pokemon = NULL;
+    } else {
+        datos->nombre_entrenador = paciente.pokemon->entrenador->nombre;
+        datos->nombre_pokemon = paciente.pokemon->nombre;
+    }
+
+    return paciente.pokemon != NULL ? ExitoSimulacion : ErrorSimulacion;
+}
+
+ResultadoSimulacion tratar_pokemon(DatosDificultad* dificultad, paciente_t* paciente, Intento* intento, unsigned* puntaje){
+    if(!dificultad || !paciente || !paciente->pokemon || !intento) return ErrorSimulacion;
+
+
+    int puntaje = dificultad->calcular_puntaje(paciente->pokemon->nivel, intento->nivel_adivinado);
+    paciente->intentos++;
+
+    if(puntaje == 0){
+        intento->es_correcto = true;
+        (*puntaje) += dificultad->calcular_puntaje(paciente->intentos);
+    }
+    
+    intento->resultado_string = dificultad->verificacion_a_string(puntaje);
     return ExitoSimulacion;
 }
 
@@ -245,16 +333,19 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
             resultado = atender_proximo_entrenador(simulador); //?
             break;
         case ObtenerInformacionPokemonEnTratamiento:
+            resultado = obtener_informacion_paciente(simulador, datos);
             break;
         case AdivinarNivelPokemon:
-            //resultado = adivinar_nivel_Pokemon(simulador);
+            resultado = tratar_pokemon(simulador->dificultad_actual, &simulador->paciente, datos, &simulador->estadisticas.puntos);
             break;
         case SeleccionarDificultad: 
+            resultado = seleccionar_dificultad(simulador, datos);
             break; //Debo incluirlo en el struct simulador
         case ObtenerInformacionDificultad:
             resultado = obtener_informacion_dificultad(simulador, datos);
             break;
         case AgregarDificultad:
+            resultado = agregar_dificultad(simulador, datos);
             break;
         case FinalizarSimulacion:
             resultado = finalizar_simulacion(&(simulador->finalizado));
@@ -265,8 +356,6 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
     return resultado;
 
 }
-
-
 
 /**
  * Destruye el simulador y libera la memoria asociada (incluida la del hospital).

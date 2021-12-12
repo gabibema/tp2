@@ -380,3 +380,10 @@ const char* pokemon_nombre(pokemon_t* pokemon){
 
     return nombre;
 }
+
+
+entrenador_t* pokemon_entrenador(pokemon_t* pokemon){
+    if(!pokemon) return NULL;
+
+    return pokemon->entrenador;
+}
