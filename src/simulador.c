@@ -256,20 +256,20 @@ bool dificultad_repetida(lista_t* lista_dificultades, DatosDificultad* datos){
     return repetida;
 }
 
-bool es_difultad_valida(lista_t* lista_dificultades, DatosDificultad* datos){
+bool es_dificultad_valida(lista_t* lista_dificultades, DatosDificultad* datos){
     return ((lista_dificultades) && (!dificultad_vacia(datos)) && (!dificultad_repetida(lista_dificultades, datos)));
 }
 
 ResultadoSimulacion agregar_dificultad(simulador_t* simulador, DatosDificultad* datos){
-    if(!simulador || !datos || !es_difultad_valida(simulador->lista_dificultades,datos)) return ErrorSimulacion;
+    if(!simulador || !datos || !es_dificultad_valida(simulador->lista_dificultades,datos)) return ErrorSimulacion;
 
     return lista_insertar(simulador->lista_dificultades, datos) != NULL ? ExitoSimulacion : ErrorSimulacion;
 }
 
 ResultadoSimulacion seleccionar_dificultad(simulador_t* simulador, int* id){
-    if(!simulador || !id || !es_dificultad_valida(simulador->lista_dificultades, *id)) return ErrorSimulacion;
+    if(!simulador || !id || !es_id_valido(simulador->lista_dificultades, *id)) return ErrorSimulacion;
 
-    DatosDificultad* dificultad = lista_elemento_en_posicion(simulador->lista_dificultades, *id);
+    DatosDificultad* dificultad = lista_elemento_en_posicion(simulador->lista_dificultades, (size_t)*id);
     if(!dificultad) return ErrorSimulacion;
 
     simulador->dificultad_actual = dificultad;
@@ -292,16 +292,16 @@ ResultadoSimulacion obtener_informacion_paciente(simulador_t* simulador, Informa
     return paciente.pokemon != NULL ? ExitoSimulacion : ErrorSimulacion;
 }
 
-ResultadoSimulacion tratar_pokemon(DatosDificultad* dificultad, paciente_t* paciente, Intento* intento, unsigned* puntaje){
+ResultadoSimulacion tratar_pokemon(DatosDificultad* dificultad, paciente_t* paciente, Intento* intento, unsigned* puntos){
     if(!dificultad || !paciente || !paciente->pokemon || !intento) return ErrorSimulacion;
 
 
-    int puntaje = dificultad->calcular_puntaje(paciente->pokemon->nivel, intento->nivel_adivinado);
+    int puntaje = dificultad->verificar_nivel((unsigned)paciente->pokemon->nivel, intento->nivel_adivinado);
     paciente->intentos++;
 
     if(puntaje == 0){
         intento->es_correcto = true;
-        (*puntaje) += dificultad->calcular_puntaje(paciente->intentos);
+        (*puntos) += (unsigned)dificultad->calcular_puntaje(paciente->intentos);
     }
     
     intento->resultado_string = dificultad->verificacion_a_string(puntaje);
