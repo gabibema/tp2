@@ -44,7 +44,6 @@ AdivinarNivelPokemon (A)
 
 AgregarDificultad (N)
 =================
-
 - Dato: DatosDificultad* inicializada con los datos correspondientes a la nueva dificultad.
 - Operación: Agrega una nueva dificultad al simulador. El campo nombre indica el nombre de la dificultad para mostrarse por pantalla, calcular_puntaje devuelve la cantidad de puntos ganados por acertar dada la cantidad de intentos requeridos, verificar_nivel recibe el numero adivinado y el correcto y devuelve 0 en caso de acertar (y cualquier otro valor en otro caso) y verificacion_a_string recibe el numero resultado de la función verificar_nivel y lo transforma en un string que representa el resultado en forma de texto.
 - Error posible: Puntero o alguno de los campos nulos. Nombre de dificultad repetido.

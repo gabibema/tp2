@@ -58,7 +58,7 @@ bool heap_vacio(heap_t* heap){
  * 
 */
 void sift_up(heap_t* heap, size_t pos){
-    if(heap_vacio(heap) || pos == 0) return;
+    if(heap_vacio(heap) || pos == 0 || heap->tope == 0) return;
 
     size_t pos_padre = posicion_padre(pos);
 
