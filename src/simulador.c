@@ -92,13 +92,6 @@ const DatosDificultad DIFICULTAD_FACIL = {FACIL, calcular_puntaje, verificar_niv
 const DatosDificultad DIFICULTAD_NORMAL = {NORMAL,calcular_puntaje, verificar_nivel, verificacion_normal};
 const DatosDificultad DIFICULTAD_DIFICIL = {DIFICIL,calcular_puntaje, verificar_nivel, verificacion_dificil};
 
-// const char* nombre;
-// unsigned (*calcular_puntaje)(unsigned cantidad_intentos);
-// int (*verificar_nivel)(unsigned nivel_adivinado, unsigned nivel_pokemon);
-// const char* (*verificacion_a_string)(int resultado_verificacion);
-
-
-
 /**
  * Crea un simulador para un hospital. El simulador toma control del hospital y
  * el mismo no debe ser modificado ni liberado por fuera del simulador.
@@ -172,11 +165,12 @@ bool guardar_en_heap(void* poke, void* h){
 
 #define NINGUNO 0
 
-void atender_pokemon(paciente_t* paciente, heap_t* pokemones){
+void atender_pokemon(paciente_t* paciente, heap_t* pokemones, unsigned* pokemones_en_espera){
     if(!paciente || !pokemones) return;
 
     pokemon_t* pokemon = heap_extraer_raiz(pokemones);
-    if(!pokemon) return;
+    if(pokemon)
+        (*pokemones_en_espera)--;
 
     paciente->pokemon = pokemon;
     paciente->intentos = NINGUNO;
@@ -190,10 +184,11 @@ ResultadoSimulacion atender_proximo_entrenador(simulador_t* simulador){
         return ErrorSimulacion;
 
     abb_con_cada_elemento(entrenador->pokemones, INORDEN, guardar_en_heap, simulador->heap_pokemones);
+    simulador->estadisticas.pokemon_en_espera = (unsigned)heap_tamanio(simulador->heap_pokemones);
     lista_iterador_avanzar(simulador->iterador_entrenadores);
 
     if(simulador->paciente.pokemon == NULL)
-        atender_pokemon(&(simulador->paciente), simulador->heap_pokemones);
+        atender_pokemon(&simulador->paciente, simulador->heap_pokemones, &(simulador->estadisticas.pokemon_en_espera));
 
     simulador->estadisticas.pokemon_en_espera = (unsigned)heap_tamanio(simulador->heap_pokemones);
     simulador->estadisticas.entrenadores_atendidos++;
@@ -292,18 +287,20 @@ ResultadoSimulacion obtener_informacion_paciente(simulador_t* simulador, Informa
     return paciente.pokemon != NULL ? ExitoSimulacion : ErrorSimulacion;
 }
 
-ResultadoSimulacion tratar_pokemon(DatosDificultad* dificultad, paciente_t* paciente, Intento* intento, unsigned* puntos){
-    if(!dificultad || !paciente || !paciente->pokemon || !intento) return ErrorSimulacion;
+ResultadoSimulacion tratar_pokemon(DatosDificultad* dificultad, heap_t* pokemones, paciente_t* paciente, Intento* intento, EstadisticasSimulacion* estadisticas){
+    if(!dificultad || !paciente || !paciente->pokemon || !intento || !estadisticas) return ErrorSimulacion;
 
 
-    int puntaje = dificultad->verificar_nivel((unsigned)paciente->pokemon->nivel, intento->nivel_adivinado);
     paciente->intentos++;
+    int puntaje = dificultad->verificar_nivel((unsigned)paciente->pokemon->nivel, intento->nivel_adivinado);
 
     if(puntaje == 0){
-        intento->es_correcto = true;
-        (*puntos) += (unsigned)dificultad->calcular_puntaje(paciente->intentos);
+        estadisticas->puntos += (unsigned)dificultad->calcular_puntaje(paciente->intentos);
+        atender_pokemon(paciente, pokemones, &estadisticas->pokemon_en_espera);
+        estadisticas->pokemon_atendidos++;
     }
     
+    intento->es_correcto = puntaje == 0 ? true : false;
     intento->resultado_string = dificultad->verificacion_a_string(puntaje);
     return ExitoSimulacion;
 }
@@ -336,7 +333,7 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
             resultado = obtener_informacion_paciente(simulador, datos);
             break;
         case AdivinarNivelPokemon:
-            resultado = tratar_pokemon(simulador->dificultad_actual, &simulador->paciente, datos, &simulador->estadisticas.puntos);
+            resultado = tratar_pokemon(simulador->dificultad_actual, simulador->heap_pokemones, &simulador->paciente, datos, &simulador->estadisticas);
             break;
         case SeleccionarDificultad: 
             resultado = seleccionar_dificultad(simulador, datos);
@@ -356,6 +353,7 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
     return resultado;
 
 }
+
 
 /**
  * Destruye el simulador y libera la memoria asociada (incluida la del hospital).

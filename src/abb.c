@@ -55,7 +55,6 @@ nodo_abb_t* nodo_crear(void* elemento){
   return nodo;
 }
 
-
 /*
  * Pre: El comparador no sea NULL.
         El el puntero al booleano no sea NULL.

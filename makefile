@@ -4,9 +4,8 @@ VFLAGS=--leak-check=full --track-origins=yes --show-reachable=yes --error-exitco
 valgrind: main
 	valgrind $(VFLAGS) ./main 2>&1
 
-pruebas: main.c src/*.c src/*.h
+main: main.c src/*.c src/*.h
 	gcc $(CFLAGS) -o main main.c src/*.c 2>&1
-
 
 valgrind-pruebas: pruebas
 	valgrind $(VFLAGS) ./pruebas 2>&1

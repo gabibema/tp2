@@ -183,10 +183,10 @@ bool es_mismo_pokemon(pokemon_t poke1, pokemon_t poke2){
 void dadoUnSimuladorValido_puedoAniadirEntrenadores_SoloSiTengoDisponibles(){
     hospital_t* hospital = hospital_crear();
     simulador_t* simulador = simulador_crear(hospital);
-    pokemon_t pokemones[8] = {{10, false, NULL, "1", "rampardos"}, {20, false, NULL, "1", "charizard"},
-                              {20, false, NULL, "2", "toxicroak"},{43, false, NULL, "1", "torkal"},
-                              {45, false, NULL, "2", "miltank"}, {59, false, NULL, "2", "shuckle"}, 
-                              {65, false, NULL, "2", "alcremie"}, {85,false, NULL, "1", "duskull"}};
+    pokemon_t pokemones[8] = {{10, NULL, "1", "rampardos"}, {20, NULL, "1", "charizard"},
+                              {20, NULL, "2", "toxicroak"},{43, NULL, "1", "torkal"},
+                              {45, NULL, "2", "miltank"}, {59, NULL, "2", "shuckle"}, 
+                              {65, NULL, "2", "alcremie"}, {85, NULL, "1", "duskull"}};
 
     pa2m_afirmar(simulador_simular_evento(simulador, AtenderProximoEntrenador, NULL) == ErrorSimulacion, "Dado un simulador con un hospital vacío, al no tener entrenadores, si intento atender un nuevo entrenadores no puedo hacerlo\n");
 
@@ -321,6 +321,81 @@ void dadoUnSimuladorValido_puedoObtenerInformacionDeDificultades_siLosIdsExisten
     simulador_destruir(simulador);
 }
 
+void dadoUnSimuladorValido_puedoAdivinarElNivel_soloSiTengoPokemonesParaAtender(){
+    hospital_t* hospital = hospital_crear();
+    hospital_leer_archivo(hospital, "ejemplos/varios_entrenadores.hospital");
+    simulador_t* simulador = simulador_crear(hospital);
+
+    Intento intento = {.nivel_adivinado = 10};
+    pa2m_afirmar(simulador_simular_evento(NULL, AdivinarNivelPokemon, &intento) == ErrorSimulacion, "Dado un simulador NULL, al intentar adivinar el nivel de un pokemon, no puedo hacerlo");
+    pa2m_afirmar(simulador_simular_evento(simulador, AdivinarNivelPokemon, NULL) == ErrorSimulacion, "Dado un simulador, al intentar adivinar el nivel de un pokemon con un intento NULL, no puedo hacerlo");
+    pa2m_afirmar(simulador_simular_evento(simulador, AdivinarNivelPokemon, &intento) == ErrorSimulacion, "Dado un simulador, al intentar adivinar y no tener ningún pokemon en recepción, no puedo hacerlo\n");
+
+    simulador_simular_evento(simulador, AtenderProximoEntrenador, NULL);
+    pa2m_afirmar(simulador_simular_evento(simulador, AdivinarNivelPokemon, &intento) == ExitoSimulacion, "Dado un simulador, al intentar adivinar y tener un pokemon en recepción, puedo hacerlo");
+    pa2m_afirmar(intento.es_correcto, "El pokemon fue adivinado correctamente");
+    pa2m_afirmar(strcmp(intento.resultado_string, "Acertaste") == 0, "El resultado string del intento es el correcto");
+    pa2m_afirmar(strcmp("charizard", simulador->paciente.pokemon->nombre) == 0, "Al adivinar el pokemon, el simulador pasa a atender un nuevo pokemon");
+    pa2m_afirmar(simulador->estadisticas.puntos == 100, "Se obtuvo la cantidad de puntos correcta");
+    pa2m_afirmar(simulador->estadisticas.pokemon_atendidos == 1, "La cantidad de pokemones atendidos ahora es 1 (uno)");
+    pa2m_afirmar(simulador->estadisticas.pokemon_en_espera == 2, "La cantidad de pokemones en espera ahora es 2 (dos)\n");
+
+    pa2m_afirmar(simulador_simular_evento(simulador, AdivinarNivelPokemon, &intento) == ExitoSimulacion, "Al intentar adivinar nuevamente, puedo hacerlo");
+    pa2m_afirmar(intento.es_correcto == false, "El pokemon no pudo ser adivinado");
+    pa2m_afirmar(strcmp("charizard", simulador->paciente.pokemon->nombre) == 0, "Al no adivinar el pokemon, el simulador continua atendiendo el mismo pokemon");
+    pa2m_afirmar(strcmp(intento.resultado_string, "Caliente") == 0, "El resultado string del intento es el correcto");
+    pa2m_afirmar(simulador->estadisticas.puntos == 100, "La cantidad de puntos se mantiene igual");
+    pa2m_afirmar(simulador->estadisticas.pokemon_atendidos == 1, "La cantidad de pokemones atendidos ahora es 1 (uno)");
+    pa2m_afirmar(simulador->estadisticas.pokemon_en_espera == 2, "El simulador mantiene la misma cantidad de pokemones en espera\n")
+
+
+    intento.nivel_adivinado = 20;
+    pa2m_afirmar(simulador_simular_evento(simulador, AdivinarNivelPokemon, &intento) == ExitoSimulacion, "Al intentar adivinar nuevamente, puedo hacerlo");
+    pa2m_afirmar(intento.es_correcto == true, "El pokemon fue adivinado");
+    pa2m_afirmar(strcmp("torkal", simulador->paciente.pokemon->nombre) == 0, "Al adivinar el pokemon, el simulador atiende un nuevo pokemon");
+    pa2m_afirmar(strcmp(intento.resultado_string, "Acertaste") == 0, "El resultado string del intento es el correcto");
+    pa2m_afirmar(simulador->estadisticas.puntos == 150, "La cantidad de puntos obtenidas es la correcta");
+    pa2m_afirmar(simulador->estadisticas.pokemon_atendidos == 2, "La cantidad de pokemones atendidos ahora es 2 (dos)");
+    pa2m_afirmar(simulador->estadisticas.pokemon_en_espera == 1, "La cantidad de pokemones en espera ahora es 1 (uno)\n");
+
+    intento.nivel_adivinado = 43;
+    simulador_simular_evento(simulador, AdivinarNivelPokemon, &intento);
+    intento.nivel_adivinado = 85;
+    simulador_simular_evento(simulador, AdivinarNivelPokemon, &intento);
+
+    intento.resultado_string = NULL;
+    pa2m_afirmar(simulador_simular_evento(simulador, AdivinarNivelPokemon, &intento) == ErrorSimulacion, "Al atender a todos los pokemones de la sala de espera, no puedo seguir adivinando niveles");
+    
+
+
+    simulador_destruir(simulador);
+}
+
+void DadoUnSimuladorDeUnSoloPokemon_AdivinoTodos_NoQuedanPokemonesPorAtender(){
+    hospital_t* h = hospital_crear();
+    hospital_leer_archivo(h, "ejemplos/un_entrenador.hospital");
+    simulador_t* simulador = simulador_crear(h);
+
+    simulador_simular_evento(simulador, AtenderProximoEntrenador, NULL);
+
+    Intento n40;
+    n40.nivel_adivinado = 40;
+    Intento n50;
+    n50.nivel_adivinado = 50;
+    Intento n101;
+    n101.nivel_adivinado = 101;
+    
+    simulador_simular_evento(simulador, AdivinarNivelPokemon, &n40);
+    simulador_simular_evento(simulador, AdivinarNivelPokemon, &n50);
+    simulador_simular_evento(simulador, AdivinarNivelPokemon, &n101);
+
+    pa2m_afirmar(!simulador->paciente.pokemon, "No hay siguiente pokemon a atender si fueron todos atendidos");
+    pa2m_afirmar(simulador->estadisticas.pokemon_en_espera == 0 && simulador->estadisticas.pokemon_atendidos == 3, "Se atendieron 3 pokemones y no quedan por atender");
+    pa2m_afirmar(simulador->estadisticas.entrenadores_atendidos == 1, "Se atendio a un entrenador");
+
+    simulador_destruir(simulador);
+}
+
 int main(){
 
     pa2m_nuevo_grupo("Pruebas de  creación y destrucción");
@@ -353,5 +428,9 @@ int main(){
     pa2m_nuevo_grupo("Pruebas de Dificultad Informacion");
     dadoUnSimuladorValido_puedoObtenerInformacionDeDificultades_siLosIdsExisten();
 
+    pa2m_nuevo_grupo("Pruebas de Adivinar Nivel");
+    dadoUnSimuladorValido_puedoAdivinarElNivel_soloSiTengoPokemonesParaAtender();
+
+    //DadoUnSimuladorDeUnSoloPokemon_AdivinoTodos_NoQuedanPokemonesPorAtender();
     return pa2m_mostrar_reporte();
 }

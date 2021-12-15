@@ -11,8 +11,6 @@ struct _entrenador_t{
     char* id;
     char* nombre;
     abb_t* pokemones; //De este entrenador
-    size_t cantidad_pokemones;
-    size_t cantidad_atendidos;
 };
 
 typedef struct paciente{
@@ -44,7 +42,6 @@ struct _hospital_pkm_t{
 
 struct _pkm_t{
     size_t nivel;
-    bool atendido;
     entrenador_t* entrenador;
     char* id_entrenador;
     char* nombre;
