@@ -380,7 +380,7 @@ bool lista_iterador_avanzar(lista_iterador_t* iterador){
 void* lista_iterador_elemento_actual(lista_iterador_t* iterador){
     void* elemento_actual = NULL;
 
-    if(iterador != NULL || iterador->corriente != NULL)
+    if(iterador != NULL && iterador->corriente != NULL)
         elemento_actual = iterador->corriente->elemento;
     
     return elemento_actual;
