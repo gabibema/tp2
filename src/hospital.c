@@ -7,7 +7,6 @@
 #include "split.h"
 #include "heap.h"
 #include "cola.h"
-#include "hash.h"
 #include "abb.h"
 
 #define FIN '\0'

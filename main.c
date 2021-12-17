@@ -251,18 +251,31 @@ void aniadir_dificultad(Juego* juego){
     printf("═══════════════════◓══════════════════\n");
     sleep(1);
 
-    size_t id = 0;
+    int opcion;
+    do{
+        system("clear");
+        printf("═══════════════════◓══════════════════\n");
+        printf("            << Ingresa >>\n");
+        printf(" --> (1) Para añadir la dificultad random\n\n");
+        printf(" --> (2) Para añadir la dificultad tutorial\n");
+        printf("═══════════════════◓══════════════════\n");
+        printf("     [ Para Volver al Menu Ingresa (-1) ]\n");
+        printf(" ➤ ");
+        opcion = leer_numero();
+    } while(opcion != -1 && opcion != 1 && opcion != 2);
+
+    if(opcion == -1) return;
+
+    size_t id = opcion == 1 ? 3 : 4;
     DatosDificultad* datos;
-    if(lista_tamanio(juego->simulador->lista_dificultades) == 3){
-        id = 3;
+
+    if(id == 3)
         simulador_simular_evento(juego->simulador, AgregarDificultad, (DatosDificultad*)&DIFICULTAD_RANDOM);
-    } else if (lista_tamanio(juego->simulador->lista_dificultades) == 4){
-        id = 4;
+    else if (lista_tamanio(juego->simulador->lista_dificultades) == 4)
         simulador_simular_evento(juego->simulador, AgregarDificultad, (DatosDificultad*)&DIFICULTAD_TUTORIAL);
-    }
     
     datos = lista_elemento_en_posicion(juego->simulador->lista_dificultades, id);
-    char opcion;
+    char opcion_1;
     do{
         system("clear");
         printf("═══════════════════◓══════════════════\n");
@@ -271,8 +284,8 @@ void aniadir_dificultad(Juego* juego){
         printf("═══════════════════◓══════════════════\n");
         printf("     [ Para Volver al Menu Ingresa (B) ]\n");
         printf(" ➤ ");
-        opcion = leer_comando();
-    } while(opcion != VOLVER_ATRAS);
+        opcion_1 = leer_comando();
+    } while(opcion_1 != VOLVER_ATRAS);
 
 }
 
